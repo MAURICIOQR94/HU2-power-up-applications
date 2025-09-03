@@ -35,3 +35,12 @@ adapters:
       initial-size: 12
       max-size: 15
       max-idle-time: 10
+
+  reactive-web:
+    base-path: "api/v1/solicitudes"
+
+
+logging:
+  level:
+    io.r2dbc.postgresql: INFO
+    io.r2dbc.spi.ConnectionFactory: INFO

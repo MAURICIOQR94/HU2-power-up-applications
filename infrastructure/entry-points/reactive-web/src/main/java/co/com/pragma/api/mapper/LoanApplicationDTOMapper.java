@@ -14,7 +14,6 @@ public interface LoanApplicationDTOMapper {
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "createdAt", ignore = true)
     @Mapping(target = "loanType", source = "idLoanType")
-    @Mapping(target = "status", source = "idStatus")
     LoanApplication toEntity(LoanApplicationRequestDTO loanApplicationRequestDTO);
 
     LoanApplicationResponseDTO toDTO(LoanApplication loanApplication);

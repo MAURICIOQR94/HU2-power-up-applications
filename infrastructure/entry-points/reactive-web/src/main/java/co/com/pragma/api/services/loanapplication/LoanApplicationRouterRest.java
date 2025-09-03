@@ -1,17 +1,31 @@
 package co.com.pragma.api.services.loanapplication;
 
+import co.com.pragma.api.config.ApiProperties;
+import lombok.RequiredArgsConstructor;
+import org.springdoc.webflux.core.fn.SpringdocRouteBuilder;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.MediaType;
 import org.springframework.web.reactive.function.server.RouterFunction;
 import org.springframework.web.reactive.function.server.ServerResponse;
 
-import static org.springframework.web.reactive.function.server.RequestPredicates.POST;
-import static org.springframework.web.reactive.function.server.RouterFunctions.route;
+import static org.springframework.web.reactive.function.server.RequestPredicates.accept;
 
 @Configuration
-public class LoanApplicationRouterRest {
+@RequiredArgsConstructor
+public non-sealed class LoanApplicationRouterRest extends LoanApplicationApiDoc{
+
+    private final ApiProperties apiProperties;
+
     @Bean
-    public RouterFunction<ServerResponse> routerFunction(LoanApplicationHandler loanApplicationHandler) {
-        return route(POST("/api/v1/solicitudes"), loanApplicationHandler::save);
+    public RouterFunction<ServerResponse> routerFunction(LoanApplicationHandler handler) {
+        return SpringdocRouteBuilder.route()
+                .POST(apiProperties.basePath(),
+                        accept(MediaType.APPLICATION_JSON),
+                        handler::save,
+                        save()
+                )
+                .build();
     }
+
 }
