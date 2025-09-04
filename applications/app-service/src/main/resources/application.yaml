@@ -40,6 +40,9 @@ adapters:
     base-path: "api/v1/solicitudes"
 
 
+jwt:
+  secret: ${JWT_SECRET}
+
 logging:
   level:
     io.r2dbc.postgresql: INFO
