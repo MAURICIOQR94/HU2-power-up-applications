@@ -65,11 +65,8 @@ public sealed class LoanApplicationApiDoc permits LoanApplicationRouterRest {
         return exampleOjectBuilder().value("""
                 {
                     "data": {
-                        "idUser": 1,
-                        "firstname": "Mauricio",
-                        "lastname": "Quintero",
-                        "birthDate":30-01-94,
-                        "email": "mauroqr94@gmail.com"
+                        "documentNumber": "1053832286",
+                        "createdAt": "2025-09-04T16:19:12.9279758"
                     }
                 }
                 """);

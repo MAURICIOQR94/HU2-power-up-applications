@@ -26,3 +26,5 @@ include ':reactive-web'
 project(':reactive-web').projectDir = file('./infrastructure/entry-points/reactive-web')
 include ':common'
 project(':common').projectDir = file('./infrastructure/helpers/common')
+include ':security'
+project(':security').projectDir = file('./infrastructure/driven-adapters/security')

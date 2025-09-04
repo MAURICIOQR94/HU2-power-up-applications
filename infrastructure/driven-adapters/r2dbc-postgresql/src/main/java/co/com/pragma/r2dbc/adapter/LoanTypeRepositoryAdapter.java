@@ -24,4 +24,10 @@ public class LoanTypeRepositoryAdapter extends ReactiveAdapterOperations<LoanTyp
                 .map(this::toEntity)
                 .onErrorMap(e -> new TechnicalException(e, LOAN_TYPE_FIND_BY_ID));
     }
+
+    @Override
+    public Mono<LoanType> findByName(String name) {
+        return repository.findByName(name)
+                .map(this::toEntity);
+    }
 }

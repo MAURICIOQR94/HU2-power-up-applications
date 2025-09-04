@@ -12,14 +12,15 @@ import org.mapstruct.Mapping;
 public interface LoanApplicationDTOMapper {
 
     @Mapping(target = "id", ignore = true)
+    @Mapping(target = "status", ignore = true)
     @Mapping(target = "createdAt", ignore = true)
-    @Mapping(target = "loanType", source = "idLoanType")
+    @Mapping(target = "loanType", source = "loanType")
     LoanApplication toEntity(LoanApplicationRequestDTO loanApplicationRequestDTO);
 
-    LoanApplicationResponseDTO toDTO(LoanApplication loanApplication);
+    LoanApplicationResponseDTO toData(LoanApplication loanApplication);
 
-    default LoanType mapLoanType(Long id) {
-        return id !=null ? LoanType.builder().id(id).build() : null;
+    default LoanType mapLoanType(String name) {
+        return name !=null ? LoanType.builder().name(name).build() : null;
     }
 
     default ApplicationStatus mapStatus(Long id) {
