@@ -1,4 +1,4 @@
-package co.com.pragma.r2dbc.config;
+package co.com.pragma.config;
 
 import io.r2dbc.spi.ConnectionFactory;
 import org.springframework.context.annotation.Bean;

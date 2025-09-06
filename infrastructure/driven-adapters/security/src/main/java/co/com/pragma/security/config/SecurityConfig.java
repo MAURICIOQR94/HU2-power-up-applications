@@ -2,6 +2,7 @@ package co.com.pragma.security.config;
 
 import co.com.pragma.common.exception.GeneralException;
 import co.com.pragma.security.JwtServerAuthenticationConverter;
+import co.com.pragma.security.service.CustomAuthenticationEntryPoint;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Bean;
@@ -34,14 +35,13 @@ public class SecurityConfig {
                         .pathMatchers(
                                 "/swagger-ui.html",
                                 "/swagger-ui/**",
-                                "/v3/api-docs/**",
-                                "/v3/api-docs.yaml",
-                                "/webjars/**"
+                                "/v3/api-docs/**"
                         ).permitAll()
                         .pathMatchers(HttpMethod.POST, "/api/v1/solicitudes").hasAuthority(ROLE_CLIENT)
                         .anyExchange().authenticated()
                 )
                 .exceptionHandling(exceptions -> exceptions
+                        .authenticationEntryPoint(new CustomAuthenticationEntryPoint())
                         .accessDeniedHandler((exchange, denied) ->
                                 Mono.error(new GeneralException(ACCESS_DENIED))
                         )
