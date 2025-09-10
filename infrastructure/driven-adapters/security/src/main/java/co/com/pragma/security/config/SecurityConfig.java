@@ -21,6 +21,8 @@ import static co.com.pragma.common.enums.GeneralExceptionMessage.ACCESS_DENIED;
 public class SecurityConfig {
 
     private static final String ROLE_CLIENT = "CLIENTE";
+    private static final String ROLE_ADMIN = "ADMIN";
+    private static final String ROLE_ASESOR = "ASESOR";
 
     private final ReactiveAuthenticationManager authenticationManager;
     private final JwtServerAuthenticationConverter authenticationConverter;
@@ -37,6 +39,7 @@ public class SecurityConfig {
                                 "/swagger-ui/**",
                                 "/v3/api-docs/**"
                         ).permitAll()
+                        .pathMatchers(HttpMethod.GET, "/api/v1/solicitudes").hasAnyAuthority(ROLE_ADMIN, ROLE_ASESOR)
                         .pathMatchers(HttpMethod.POST, "/api/v1/solicitudes").hasAuthority(ROLE_CLIENT)
                         .anyExchange().authenticated()
                 )

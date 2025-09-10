@@ -2,8 +2,7 @@ package co.com.pragma.usecase.registerloanapplication;
 
 import co.com.pragma.model.applicationstatus.ApplicationStatus;
 import co.com.pragma.model.applicationstatus.gateways.ApplicationStatusRepository;
-import co.com.pragma.model.common.enums.BusinessExceptionMessage;
-import co.com.pragma.model.common.exception.BusinessException;
+import co.com.pragma.common.exception.BusinessException;
 import co.com.pragma.model.loanapplication.LoanApplication;
 import co.com.pragma.model.loanapplication.gateways.LoanApplicationRepository;
 import co.com.pragma.model.loantype.LoanType;
@@ -14,8 +13,8 @@ import reactor.core.publisher.Mono;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
-import static co.com.pragma.model.common.enums.BusinessExceptionMessage.APPLICATION_STATUS_NOT_FOUND;
-import static co.com.pragma.model.common.enums.BusinessExceptionMessage.LOAN_TYPE_NOT_FOUND;
+import static co.com.pragma.common.enums.BusinessExceptionMessage.APPLICATION_STATUS_NOT_FOUND;
+import static co.com.pragma.common.enums.BusinessExceptionMessage.LOAN_TYPE_NOT_FOUND;
 
 @RequiredArgsConstructor
 public class RegisterLoanApplicationUseCase {
@@ -51,7 +50,4 @@ public class RegisterLoanApplicationUseCase {
                 });
     }
 
-    public Mono<LoanApplication> findById(UUID id) {
-        return loanApplicationRepository.findById(id);
-    }
 }

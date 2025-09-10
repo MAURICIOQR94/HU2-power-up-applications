@@ -1,4 +1,4 @@
-package co.com.pragma.model.security.gateways;
+package co.com.pragma.domain.gateways.security;
 
 import co.com.pragma.model.tokeninfo.TokenInfo;
 import reactor.core.publisher.Mono;

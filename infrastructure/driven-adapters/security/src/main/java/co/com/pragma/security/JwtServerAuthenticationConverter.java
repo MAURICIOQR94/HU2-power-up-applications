@@ -20,8 +20,6 @@ public class JwtServerAuthenticationConverter implements ServerAuthenticationCon
 
         String token = authHeader.substring(7);
 
-        // OJO: Aquí normalmente solo retornas el token como "principal"
-        // La validación real la hará tu AuthenticationManager
         return Mono.just(new UsernamePasswordAuthenticationToken(token, token));
     }
 }

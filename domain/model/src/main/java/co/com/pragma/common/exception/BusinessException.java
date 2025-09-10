@@ -1,6 +1,6 @@
-package co.com.pragma.model.common.exception;
+package co.com.pragma.common.exception;
 
-import co.com.pragma.model.common.enums.BusinessExceptionMessage;
+import co.com.pragma.common.enums.BusinessExceptionMessage;
 import lombok.Getter;
 
 @Getter

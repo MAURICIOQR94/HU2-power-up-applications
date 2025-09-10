@@ -1,6 +1,6 @@
 package co.com.pragma.security.util;
 
-import co.com.pragma.model.security.gateways.JwtUtilService;
+import co.com.pragma.domain.gateways.security.JwtUtilService;
 import co.com.pragma.model.tokeninfo.TokenInfo;
 import io.jsonwebtoken.*;
 import io.jsonwebtoken.security.Keys;
@@ -17,6 +17,7 @@ import java.util.UUID;
 public class JwtUtilServiceImpl implements JwtUtilService {
 
     private static final String ROLE = "role";
+    private static final String EMAIL = "email";
     private static final String DOCUMENT_NUMBER = "documentNumber";
 
     @Value("${jwt.secret}")
@@ -65,6 +66,7 @@ public class JwtUtilServiceImpl implements JwtUtilService {
 
             return TokenInfo.builder()
                     .userId(claims.getSubject())
+                    .email(claims.get(EMAIL, String.class))
                     .documentNumber(claims.get(DOCUMENT_NUMBER, String.class))
                     .build();
         });

@@ -1,6 +1,5 @@
 package co.com.pragma.r2dbc.entity;
 
-
 import co.com.pragma.model.loantype.LoanType;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -11,7 +10,6 @@ import org.springframework.data.annotation.Transient;
 import org.springframework.data.relational.core.mapping.Column;
 import org.springframework.data.relational.core.mapping.Table;
 
-import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
@@ -31,7 +29,9 @@ public class LoanApplicationEntity {
     @Column("document_number")
     private String documentNumber;
 
-    private BigDecimal amount;
+    private String email;
+
+    private Double amount;
 
     private Integer term;
 

@@ -7,6 +7,7 @@ import lombok.Data;
 @Builder(toBuilder = true)
 public class TokenInfo {
 
+    private String email;
     private String userId;
     private String documentNumber;
 

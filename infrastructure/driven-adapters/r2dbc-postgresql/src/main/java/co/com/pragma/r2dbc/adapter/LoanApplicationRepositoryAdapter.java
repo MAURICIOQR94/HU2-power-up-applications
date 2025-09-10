@@ -7,15 +7,21 @@ import co.com.pragma.r2dbc.helper.ReactiveAdapterOperations;
 import co.com.pragma.r2dbc.entity.LoanApplicationEntity;
 import co.com.pragma.r2dbc.mapper.LoanApplicationMapper;
 import org.springframework.data.r2dbc.core.R2dbcEntityTemplate;
+import org.springframework.data.relational.core.query.Criteria;
+import org.springframework.data.relational.core.query.Query;
 import org.springframework.stereotype.Repository;
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
+import java.util.List;
 import java.util.UUID;
 
 import static co.com.pragma.common.enums.TechnicalExceptionMessage.LOAN_APPLICATION_SAVE;
 
 @Repository
 public class LoanApplicationRepositoryAdapter extends ReactiveAdapterOperations<LoanApplication, LoanApplicationEntity, UUID, ILoanApplicationRepository> implements LoanApplicationRepository {
+
+    private static final String ID_STATUS = "id_status";
 
     private final R2dbcEntityTemplate r2dbcEntityTemplate;
 
@@ -38,4 +44,28 @@ public class LoanApplicationRepositoryAdapter extends ReactiveAdapterOperations<
         return repository.findById(id)
                 .map(this::toEntity);
     }
+
+    @Override
+    public Flux<LoanApplication> findByIdStatusInPaged(List<Long> idStatuses, int page, int size) {
+        if (idStatuses == null || idStatuses.isEmpty()) {
+            return Flux.empty();
+        }
+        long offset = (long) page * size;
+
+        Query query = Query.query(Criteria.where(ID_STATUS).in(idStatuses))
+                .limit(size)
+                .offset(offset);
+
+        return r2dbcEntityTemplate.select(query, LoanApplicationEntity.class)
+                .map(this::toEntity);
+    }
+
+    public Mono<Long> countByIdStatusIn(List<Long> idStatuses) {
+        if (idStatuses == null || idStatuses.isEmpty()) {
+            return Mono.just(0L);
+        }
+        Query query = Query.query(Criteria.where(ID_STATUS).in(idStatuses));
+        return r2dbcEntityTemplate.count(query, LoanApplicationEntity.class);
+    }
+
 }

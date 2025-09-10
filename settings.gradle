@@ -28,3 +28,5 @@ include ':common'
 project(':common').projectDir = file('./infrastructure/helpers/common')
 include ':security'
 project(':security').projectDir = file('./infrastructure/driven-adapters/security')
+include ':external-web-client'
+project(':external-web-client').projectDir = file('./infrastructure/driven-adapters/external-web-client')

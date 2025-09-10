@@ -1,7 +1,7 @@
 package co.com.pragma.security;
 
 import co.com.pragma.common.exception.GeneralException;
-import co.com.pragma.model.security.gateways.JwtUtilService;
+import co.com.pragma.domain.gateways.security.JwtUtilService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;

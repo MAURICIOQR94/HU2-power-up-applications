@@ -25,7 +25,15 @@ public non-sealed class LoanApplicationRouterRest extends LoanApplicationApiDoc{
                         handler::save,
                         save()
                 )
-                .build();
+                .build()
+                .and(SpringdocRouteBuilder.route()
+                        .GET(apiProperties.basePath(),
+                                accept(MediaType.APPLICATION_JSON),
+                                handler::findByStatusPaged,
+                                findByStatusPaged()
+                        )
+                        .build()
+                );
     }
 
 }

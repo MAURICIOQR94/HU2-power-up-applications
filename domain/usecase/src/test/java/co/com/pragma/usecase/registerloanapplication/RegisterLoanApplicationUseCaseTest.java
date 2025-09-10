@@ -17,7 +17,6 @@ import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 
 import java.time.LocalDateTime;
-import java.math.BigDecimal;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -56,7 +55,7 @@ class RegisterLoanApplicationUseCaseTest {
                 .id(UUID.randomUUID())
                 .idUser(UUID.randomUUID())
                 .documentNumber("123456")
-                .amount(BigDecimal.valueOf(10000.0))
+                .amount(10000.0)
                 .term(12)
                 .status(status)
                 .loanType(loanType)
@@ -71,7 +70,9 @@ class RegisterLoanApplicationUseCaseTest {
         when(loanApplicationRepository.save(any(LoanApplication.class)))
                 .thenAnswer(invocation -> Mono.just(invocation.getArgument(0)));
 
-        StepVerifier.create(registerLoanApplicationUseCase.execute(loanApplication))
+        Mono<LoanApplication> result = registerLoanApplicationUseCase.execute(loanApplication);
+
+        StepVerifier.create(result)
                 .assertNext(saved -> {
                     assertNotNull(saved.getId());
                     assertEquals(LOAN_TYPE, saved.getLoanType().getName());
@@ -89,7 +90,9 @@ class RegisterLoanApplicationUseCaseTest {
         when(loanApplicationRepository.save(any(LoanApplication.class)))
                 .thenReturn(Mono.error(new RuntimeException("DB error")));
 
-        StepVerifier.create(registerLoanApplicationUseCase.execute(loanApplication))
+        Mono<LoanApplication> result = registerLoanApplicationUseCase.execute(loanApplication);
+
+        StepVerifier.create(result)
                 .expectErrorMatches(ex -> ex instanceof RuntimeException &&
                         ex.getMessage().equals("DB error"))
                 .verify();

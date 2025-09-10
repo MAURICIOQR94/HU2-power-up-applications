@@ -15,7 +15,6 @@ import org.springframework.data.r2dbc.core.R2dbcEntityTemplate;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 
-import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
@@ -51,7 +50,7 @@ class ILoanApplicationRepositoryAdapterTest {
                 .id(id)
                 .idUser(idUser)
                 .documentNumber("123456789")
-                .amount(new BigDecimal("5000000"))
+                .amount(5000000.0)
                 .term(24)
                 .idLoanType(1L)
                 .idStatus(1L)
@@ -62,7 +61,7 @@ class ILoanApplicationRepositoryAdapterTest {
                 .id(id)
                 .idUser(idUser)
                 .documentNumber("123456789")
-                .amount(new BigDecimal("5000000"))
+                .amount(5000000.0)
                 .term(24)
                 .loanType(LoanType.builder().id(1L).build())
                 .status(ApplicationStatus.builder().id(1L).build())

@@ -1,4 +1,4 @@
-package co.com.pragma.model.common.enums;
+package co.com.pragma.common.enums;
 
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;

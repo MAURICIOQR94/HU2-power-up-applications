@@ -1,10 +1,10 @@
 package co.com.pragma.api.handlers;
 
-import co.com.pragma.api.dto.ErrorDTO;
-import co.com.pragma.api.mapper.ResponseDTO;
+import co.com.pragma.api.dto.common.ErrorDTO;
+import co.com.pragma.api.dto.common.ResponseDTO;
 import co.com.pragma.common.exception.GeneralException;
 import co.com.pragma.common.exception.TechnicalException;
-import co.com.pragma.model.common.exception.BusinessException;
+import co.com.pragma.common.exception.BusinessException;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.boot.autoconfigure.web.WebProperties;
 import org.springframework.boot.autoconfigure.web.reactive.error.AbstractErrorWebExceptionHandler;

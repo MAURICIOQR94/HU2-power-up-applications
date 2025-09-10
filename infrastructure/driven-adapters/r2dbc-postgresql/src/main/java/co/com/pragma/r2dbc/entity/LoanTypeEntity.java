@@ -8,8 +8,6 @@ import org.springframework.data.annotation.Id;
 import org.springframework.data.relational.core.mapping.Column;
 import org.springframework.data.relational.core.mapping.Table;
 
-import java.math.BigDecimal;
-
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
@@ -23,10 +21,10 @@ public class LoanTypeEntity {
     private String name;
 
     @Column("min_amount")
-    private BigDecimal minAmount;
+    private Double minAmount;
 
     @Column("max_amount")
-    private BigDecimal maxAmount;
+    private Double maxAmount;
 
     @Column("interest_rate")
     private Float interestRate;
