@@ -1,7 +1,8 @@
 package co.com.pragma.api.services.loanapplication;
 
-import co.com.pragma.api.dto.LoanApplicationRequestDTO;
+import co.com.pragma.api.dto.LoanApplicationSaveRequestDTO;
 import co.com.pragma.api.dto.LoanApplicationResponseDTO;
+import co.com.pragma.api.dto.LoanApplicationUpdateRequestDTO;
 import co.com.pragma.api.dto.common.ErrorDTO;
 import org.springdoc.core.fn.builders.operation.Builder;
 
@@ -27,6 +28,7 @@ public sealed class LoanApplicationApiDoc permits LoanApplicationRouterRest {
     public static final String CREATED = "Created";
     public static final String NOT_FOUND = "Loan Application not found";
     public static final String ACCESS_DENIED = "Not Authenticated";
+    public static final String NO_CONTENT = "No content";
 
     protected Consumer<Builder> findByStatusPaged() {
         return ops -> ops.tag("authentication")
@@ -58,11 +60,36 @@ public sealed class LoanApplicationApiDoc permits LoanApplicationRouterRest {
                 .parameter(createHeader(
                         String.class, ACCEPT, ACCEPT_HEADER, APPLICATION_JSON_VALUE
                 ))
-                .requestBody(requestBodyBuilder().implementation(LoanApplicationRequestDTO.class))
+                .requestBody(requestBodyBuilder().implementation(LoanApplicationSaveRequestDTO.class))
                 .response(responseBuilder().responseCode("201").description(CREATED)
                         .content(
                                 contentBuilder()
-                                        .schema(schemaBuilder().implementation(LoanApplicationRequestDTO.class))
+                                        .schema(schemaBuilder().implementation(LoanApplicationSaveRequestDTO.class))
+                                        .example(exampleSaveResponse())
+                        )
+                )
+                .response(responseBuilder().responseCode("401").description(ACCESS_DENIED)
+                        .implementation(ErrorDTO.class))
+                .response(responseBuilder().responseCode("404").description(NOT_FOUND)
+                        .implementation(ErrorDTO.class))
+                .response(responseBuilder().responseCode("409").description(BUSINESS_ERROR)
+                        .implementation(ErrorDTO.class))
+                .response(responseBuilder().responseCode("500").description(TECHNICAL_ERROR)
+                        .implementation(ErrorDTO.class));
+    }
+
+    protected Consumer<Builder> updateLoanApplicationStatus() {
+        return ops -> ops.tag("applications")
+                .operationId("update").summary("Update loan application status")
+                .description("Update loan application status").tags(new String[]{"applications"})
+                .parameter(createHeader(
+                        String.class, ACCEPT, ACCEPT_HEADER, APPLICATION_JSON_VALUE
+                ))
+                .requestBody(requestBodyBuilder().implementation(LoanApplicationUpdateRequestDTO.class))
+                .response(responseBuilder().responseCode("204").description(NO_CONTENT)
+                        .content(
+                                contentBuilder()
+                                        .schema(schemaBuilder().implementation(LoanApplicationUpdateRequestDTO.class))
                                         .example(exampleSaveResponse())
                         )
                 )

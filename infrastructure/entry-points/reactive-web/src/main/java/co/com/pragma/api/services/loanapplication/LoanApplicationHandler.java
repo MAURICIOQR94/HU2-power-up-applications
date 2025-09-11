@@ -1,16 +1,19 @@
 package co.com.pragma.api.services.loanapplication;
 
 import co.com.pragma.api.config.ApiProperties;
-import co.com.pragma.api.dto.LoanApplicationRequestDTO;
+import co.com.pragma.api.dto.LoanApplicationSaveRequestDTO;
+import co.com.pragma.api.dto.LoanApplicationUpdateRequestDTO;
 import co.com.pragma.api.dto.PagedResponseDTO;
 import co.com.pragma.api.dto.common.ResponseDTO;
 import co.com.pragma.api.handlers.ValidatorHandler;
 import co.com.pragma.api.mapper.LoanApplicationDTOMapper;
+import co.com.pragma.api.util.ParamsUtil;
 import co.com.pragma.common.exception.GeneralException;
 import co.com.pragma.domain.gateways.security.JwtUtilService;
 import co.com.pragma.model.tokeninfo.TokenInfo;
 import co.com.pragma.usecase.getloanapplications.GetLoanApplicationsUseCase;
 import co.com.pragma.usecase.registerloanapplication.RegisterLoanApplicationUseCase;
+import co.com.pragma.usecase.updateloanapplicationstatus.UpdateLoanApplicationStatusUseCase;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.stereotype.Component;
@@ -34,6 +37,7 @@ public class LoanApplicationHandler {
 
     private final RegisterLoanApplicationUseCase registerLoanApplicationUseCase;
     private final GetLoanApplicationsUseCase getLoanApplicationsUseCase;
+    private final UpdateLoanApplicationStatusUseCase updateLoanApplicationStatusUsecase;
     private final TransactionalOperator transactionalOperator;
     private final LoanApplicationDTOMapper mapper;
     private final ValidatorHandler validatorHandler;
@@ -45,15 +49,15 @@ public class LoanApplicationHandler {
 
         String token = serverRequest.headers().firstHeader("Authorization").split(" ")[1];
         return Mono.zip(
-                        serverRequest.bodyToMono(LoanApplicationRequestDTO.class)
+                        serverRequest.bodyToMono(LoanApplicationSaveRequestDTO.class)
                                 .switchIfEmpty(Mono.error(new GeneralException(INVALID_BODY_PARAMETER)))
                                 .doOnNext(validatorHandler::validateObject),
                         jwtUtilService.getClaims(token)
                 ).map(tuple -> {
-                    LoanApplicationRequestDTO loanApplicationRequestDTO = tuple.getT1();
+                    LoanApplicationSaveRequestDTO loanApplicationSaveRequestDTO = tuple.getT1();
                     TokenInfo tokenInfo = tuple.getT2();
 
-                    var entity = mapper.toEntity(loanApplicationRequestDTO);
+                    var entity = mapper.toEntity(loanApplicationSaveRequestDTO);
                     entity.setIdUser(UUID.fromString(tokenInfo.getUserId()));
                     entity.setDocumentNumber(tokenInfo.getDocumentNumber());
                     entity.setEmail(tokenInfo.getEmail());
@@ -98,6 +102,23 @@ public class LoanApplicationHandler {
                                 .toList()
                 ))
                 .flatMap(result -> ServerResponse.ok().bodyValue(result));
+    }
+
+    public Mono<ServerResponse> updateLoanApplicationStatus(ServerRequest request) {
+        return ParamsUtil.getIdPathParam(request)
+                .doOnNext(id -> log.info("Processing loan application update with identifier: {}", id))
+                .flatMap(id -> request.bodyToMono(LoanApplicationUpdateRequestDTO.class)
+                        .doOnNext(validatorHandler::validateObject)
+                        .flatMap(updateDto -> {
+                            String status = updateDto.getStatus();
+                            return updateLoanApplicationStatusUsecase.execute(UUID.fromString(id), status)
+                                    .map(mapper::toData)
+                                    .doOnSuccess(la -> log.info("Loan application status updated correctly: {}", la.getId()))
+                                    .then(ServerResponse.noContent().build());
+                        }
+                        )
+                )
+                .as(transactionalOperator::transactional);
     }
 
 }

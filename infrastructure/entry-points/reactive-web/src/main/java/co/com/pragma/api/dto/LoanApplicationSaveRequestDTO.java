@@ -8,7 +8,7 @@ import lombok.extern.jackson.Jacksonized;
 @Value
 @Builder
 @Jacksonized
-public class LoanApplicationRequestDTO {
+public class LoanApplicationSaveRequestDTO {
 
     @NotBlank(message = "- Loan type is required")
     String loanType;

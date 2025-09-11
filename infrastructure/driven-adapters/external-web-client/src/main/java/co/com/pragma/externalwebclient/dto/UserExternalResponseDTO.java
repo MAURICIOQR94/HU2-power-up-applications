@@ -8,5 +8,6 @@ import lombok.Data;
 public class UserExternalResponseDTO {
 
     private String firstName;
+    private String lastName;
     private String email;
 }

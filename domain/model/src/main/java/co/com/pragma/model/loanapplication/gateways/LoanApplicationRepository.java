@@ -13,6 +13,7 @@ public interface LoanApplicationRepository {
     Mono<LoanApplication> findById(UUID id);
     Flux<LoanApplication> findByIdStatusInPaged(List<Long> statuses, int page, int size);
     Mono<Long> countByIdStatusIn(List<Long> idStatuses);
+    Mono<LoanApplication> update(LoanApplication loanApplication);
 
 
 }

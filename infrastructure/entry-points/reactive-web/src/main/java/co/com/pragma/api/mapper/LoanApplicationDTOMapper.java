@@ -1,6 +1,6 @@
 package co.com.pragma.api.mapper;
 
-import co.com.pragma.api.dto.LoanApplicationRequestDTO;
+import co.com.pragma.api.dto.LoanApplicationSaveRequestDTO;
 import co.com.pragma.api.dto.LoanApplicationResponseDTO;
 import co.com.pragma.model.loanapplication.LoanApplication;
 import co.com.pragma.model.loantype.LoanType;
@@ -16,7 +16,7 @@ public interface LoanApplicationDTOMapper {
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "status", ignore = true)
     @Mapping(target = "loanType", source = "loanType")
-    LoanApplication toEntity(LoanApplicationRequestDTO loanApplicationRequestDTO);
+    LoanApplication toEntity(LoanApplicationSaveRequestDTO loanApplicationSaveRequestDTO);
 
     LoanApplicationResponseDTO toData(LoanApplication loanApplication);
 
