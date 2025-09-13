@@ -15,7 +15,8 @@ public enum TechnicalExceptionMessage {
     LOAN_APPLICATION_UPDATE("TE005", "Error updating loan application"),
     LOAN_APPLICATION_DELETE("TE006", "Error deleting loan application"),
 
-    LOAN_TYPE_FIND_BY_ID("TE007", "Error getting loan type by id");
+    LOAN_TYPE_FIND_BY_ID("TE007", "Error getting loan type by id"),
+    ERROR_SERIALIZING_OBJECT("TE008", "Error serializing object");
 
     private final String code;
     private final String message;

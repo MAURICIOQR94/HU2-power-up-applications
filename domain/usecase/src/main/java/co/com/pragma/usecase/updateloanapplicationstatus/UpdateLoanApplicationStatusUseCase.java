@@ -1,9 +1,13 @@
 package co.com.pragma.usecase.updateloanapplicationstatus;
 
 import co.com.pragma.common.exception.BusinessException;
+import co.com.pragma.domain.gateways.restconsumer.ExternalService;
+import co.com.pragma.domain.gateways.sqs.SQSSenderService;
+import co.com.pragma.model.applicationstatus.ApplicationStatus;
 import co.com.pragma.model.applicationstatus.gateways.ApplicationStatusRepository;
 import co.com.pragma.model.loanapplication.LoanApplication;
 import co.com.pragma.model.loanapplication.gateways.LoanApplicationRepository;
+import co.com.pragma.model.statusupdatemessage.StatusUpdateMessage;
 import lombok.RequiredArgsConstructor;
 import reactor.core.publisher.Mono;
 
@@ -19,41 +23,71 @@ public class UpdateLoanApplicationStatusUseCase {
 
     private static final String PENDIENTE = "PENDIENTE";
     private static final String REVISION_MANUAL = "REVISION_MANUAL";
-    private static final String APPROBADO = "APPROBADO";
+    private static final String APROBADO = "APROBADO";
     private static final String RECHAZADO = "RECHAZADO";
     private static final String CANCELADO = "CANCELADO";
 
     private final LoanApplicationRepository loanApplicationRepository;
     private final ApplicationStatusRepository applicationStatusRepository;
+    private final ExternalService externalService;
+    private final SQSSenderService sqsSenderService;
 
     public Mono<LoanApplication> execute(UUID id, String newStatus) {
         return loanApplicationRepository.findById(id)
                 .switchIfEmpty(Mono.error(new BusinessException(LOAN_APPLICATION_NOT_FOUND)))
-                .flatMap(loanApplication -> applicationStatusRepository.findById(loanApplication.getStatus().getId())
-                        .switchIfEmpty(Mono.error(new BusinessException(APPLICATION_STATUS_NOT_FOUND)))
-                        .flatMap(currentStatus -> {
-                            if (currentStatus.getName().equals(newStatus)) {
-                                return Mono.error(new BusinessException(STATUS_ALREADY_SET));
-                            }
-                            if (isValidStatusTransition(currentStatus.getName(), newStatus)) {
-                                return Mono.error(new BusinessException(CANNOT_CHANGE_STATUS));
-                            }
+                .flatMap(loanApplication ->
+                        validateAndFindNewStatus(loanApplication, newStatus)
+                                .flatMap(newStatusEntity ->
+                                        updateLoanApplicationStatus(loanApplication, newStatusEntity, newStatus))
+                );
+    }
 
-                            return applicationStatusRepository.findByName(newStatus.toUpperCase())
-                                    .switchIfEmpty(Mono.error(new BusinessException(APPLICATION_STATUS_NOT_FOUND)))
-                                    .flatMap(newStatusEntity -> {
-                                        loanApplication.setStatus(newStatusEntity);
+    private Mono<ApplicationStatus> validateAndFindNewStatus(LoanApplication loanApplication, String newStatus) {
+        return applicationStatusRepository.findById(loanApplication.getStatus().getId())
+                .switchIfEmpty(Mono.error(new BusinessException(APPLICATION_STATUS_NOT_FOUND)))
+                .flatMap(currentStatus -> {
+                    if (currentStatus.getName().equals(newStatus)) {
+                        return Mono.error(new BusinessException(STATUS_ALREADY_SET));
+                    }
+                    if (!isValidStatusTransition(currentStatus.getName(), newStatus)) {
+                        return Mono.error(new BusinessException(CANNOT_CHANGE_STATUS));
+                    }
+                    return applicationStatusRepository.findByName(newStatus.toUpperCase())
+                            .switchIfEmpty(Mono.error(new BusinessException(APPLICATION_STATUS_NOT_FOUND)));
+                });
+    }
 
-                                        return loanApplicationRepository.update(loanApplication);
-                                    });
-                        }));
+    private Mono<LoanApplication> updateLoanApplicationStatus(LoanApplication loanApplication,
+                                                              ApplicationStatus newStatusEntity,
+                                                              String newStatus) {
+        loanApplication.setStatus(newStatusEntity);
+
+        return loanApplicationRepository.update(loanApplication)
+                .flatMap(updatedLoanApplication -> {
+                    if (APROBADO.equals(newStatus) || RECHAZADO.equals(newStatus)) {
+                        return notifyStatusChange(updatedLoanApplication, newStatus);
+                    }
+                    return Mono.just(updatedLoanApplication);
+                });
+    }
+
+    private Mono<LoanApplication> notifyStatusChange(LoanApplication updatedApplication, String newStatus) {
+        return externalService.getUserByEmail(updatedApplication.getEmail())
+                .flatMap(user -> {
+                    StatusUpdateMessage message = StatusUpdateMessage.builder()
+                            .email(user.getEmail())
+                            .name(user.getFirstName())
+                            .status(newStatus)
+                            .build();
+                    return sqsSenderService.send(message).thenReturn(updatedApplication);
+                });
     }
 
     private boolean isValidStatusTransition(String currentStatus, String newStatus) {
         Map<String, List<String>> allowedTransitions = Map.of(
-                PENDIENTE, Arrays.asList(APPROBADO, RECHAZADO, CANCELADO),
-                REVISION_MANUAL, Arrays.asList(APPROBADO, RECHAZADO, CANCELADO),
-                APPROBADO, List.of(CANCELADO),
+                PENDIENTE, Arrays.asList(APROBADO, RECHAZADO, CANCELADO),
+                REVISION_MANUAL, Arrays.asList(APROBADO, RECHAZADO, CANCELADO),
+                APROBADO, List.of(CANCELADO),
                 RECHAZADO, List.of(),
                 CANCELADO, List.of()
         );

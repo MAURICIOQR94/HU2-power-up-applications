@@ -52,3 +52,8 @@ logging:
   level:
     io.r2dbc.postgresql: INFO
     io.r2dbc.spi.ConnectionFactory: INFO
+
+adapter:
+  sqs:
+    region: ${AWS_REGION}
+    queueUrl: ${AWS_QUEUE_URL}

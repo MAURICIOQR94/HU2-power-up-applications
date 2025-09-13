@@ -10,7 +10,6 @@ public interface JwtUtilService {
     boolean validateToken(String token);
     UUID extractUserId(String token);
     String extractRole(String token);
-    String extractDocumentNumber(String token);
     Mono<TokenInfo> getClaims(String token);
 
 }

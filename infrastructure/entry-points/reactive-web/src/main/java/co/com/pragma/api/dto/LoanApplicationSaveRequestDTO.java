@@ -10,6 +10,9 @@ import lombok.extern.jackson.Jacksonized;
 @Jacksonized
 public class LoanApplicationSaveRequestDTO {
 
+    @NotBlank(message = "- Document number is required")
+    String documentNumber;
+
     @NotBlank(message = "- Loan type is required")
     String loanType;
 

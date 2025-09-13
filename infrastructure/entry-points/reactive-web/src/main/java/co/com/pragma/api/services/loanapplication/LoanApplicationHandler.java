@@ -59,13 +59,13 @@ public class LoanApplicationHandler {
 
                     var entity = mapper.toEntity(loanApplicationSaveRequestDTO);
                     entity.setIdUser(UUID.fromString(tokenInfo.getUserId()));
-                    entity.setDocumentNumber(tokenInfo.getDocumentNumber());
                     entity.setEmail(tokenInfo.getEmail());
 
                     return entity;
                 }).flatMap(loanApplication ->
                         registerLoanApplicationUseCase.execute(loanApplication)
-                                .doOnSuccess(la -> log.info("Loan application successfully registered: {}", la.getId()))
+                                .doOnSuccess(la ->
+                                        log.info("Loan application successfully registered: {}", la.getId()))
                 ).flatMap(saved -> ServerResponse.created(
                         URI.create(apiProperties.basePath().concat(String.format("/%s", saved.getId().toString())))
                 ).bodyValue(ResponseDTO.builder()
@@ -91,7 +91,8 @@ public class LoanApplicationHandler {
         int size = Integer.parseInt(request.queryParam("size").orElse("10"));
 
         return getLoanApplicationsUseCase.findByStatusPaged(statuses, page, size)
-                .doOnSuccess(x -> log.info("The loan applications were successfully obtained: {} elements", x.getSize()))
+                .doOnSuccess(pr ->
+                        log.info("The loan applications were successfully obtained: {} elements", pr.getSize()))
                 .map(pageResult -> new PagedResponseDTO<>(
                         pageResult.getSize(),
                         pageResult.getTotalPages(),
@@ -110,12 +111,13 @@ public class LoanApplicationHandler {
                 .flatMap(id -> request.bodyToMono(LoanApplicationUpdateRequestDTO.class)
                         .doOnNext(validatorHandler::validateObject)
                         .flatMap(updateDto -> {
-                            String status = updateDto.getStatus();
-                            return updateLoanApplicationStatusUsecase.execute(UUID.fromString(id), status)
-                                    .map(mapper::toData)
-                                    .doOnSuccess(la -> log.info("Loan application status updated correctly: {}", la.getId()))
-                                    .then(ServerResponse.noContent().build());
-                        }
+                                    String status = updateDto.getStatus().toUpperCase();
+                                    return updateLoanApplicationStatusUsecase.execute(UUID.fromString(id), status)
+                                            .map(mapper::toData)
+                                            .doOnSuccess(la ->
+                                                    log.info("Loan application status updated correctly: {}", la.getId()))
+                                            .then(ServerResponse.noContent().build());
+                                }
                         )
                 )
                 .as(transactionalOperator::transactional);
