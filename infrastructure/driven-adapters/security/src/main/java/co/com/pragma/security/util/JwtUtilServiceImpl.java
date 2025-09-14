@@ -18,7 +18,6 @@ public class JwtUtilServiceImpl implements JwtUtilService {
 
     private static final String ROLE = "role";
     private static final String EMAIL = "email";
-    private static final String DOCUMENT_NUMBER = "documentNumber";
 
     @Value("${jwt.secret}")
     private String secret;
@@ -51,11 +50,6 @@ public class JwtUtilServiceImpl implements JwtUtilService {
     }
 
     @Override
-    public String extractDocumentNumber(String token) {
-        return parse(token).getBody().get(DOCUMENT_NUMBER, String.class);
-    }
-
-    @Override
     public Mono<TokenInfo> getClaims(String token) {
         return Mono.fromCallable(() -> {
             Claims claims = Jwts.parserBuilder()
@@ -67,7 +61,6 @@ public class JwtUtilServiceImpl implements JwtUtilService {
             return TokenInfo.builder()
                     .userId(claims.getSubject())
                     .email(claims.get(EMAIL, String.class))
-                    .documentNumber(claims.get(DOCUMENT_NUMBER, String.class))
                     .build();
         });
     }

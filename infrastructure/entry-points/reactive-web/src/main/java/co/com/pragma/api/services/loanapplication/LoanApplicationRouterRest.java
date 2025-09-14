@@ -15,6 +15,8 @@ import static org.springframework.web.reactive.function.server.RequestPredicates
 @RequiredArgsConstructor
 public non-sealed class LoanApplicationRouterRest extends LoanApplicationApiDoc{
 
+    private static final String ID = "/{id}";
+
     private final ApiProperties apiProperties;
 
     @Bean
@@ -31,6 +33,13 @@ public non-sealed class LoanApplicationRouterRest extends LoanApplicationApiDoc{
                                 accept(MediaType.APPLICATION_JSON),
                                 handler::findByStatusPaged,
                                 findByStatusPaged()
+                        )
+                        .build()
+                ).and(SpringdocRouteBuilder.route()
+                        .PUT(apiProperties.basePath().concat(ID),
+                                accept(MediaType.APPLICATION_JSON),
+                                handler::updateLoanApplicationStatus,
+                                updateLoanApplicationStatus()
                         )
                         .build()
                 );

@@ -68,4 +68,13 @@ public class LoanApplicationRepositoryAdapter extends ReactiveAdapterOperations<
         return r2dbcEntityTemplate.count(query, LoanApplicationEntity.class);
     }
 
+    @Override
+    public Mono<LoanApplication> update(LoanApplication loanApplication) {
+        return Mono.just(loanApplication)
+                .map(this::toData)
+                .flatMap(r2dbcEntityTemplate::update)
+                .map(this::toEntity)
+                .onErrorMap(e -> new TechnicalException(e, LOAN_APPLICATION_SAVE));
+    }
+
 }

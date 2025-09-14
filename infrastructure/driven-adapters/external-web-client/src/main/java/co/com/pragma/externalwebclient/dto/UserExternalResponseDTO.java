@@ -7,6 +7,8 @@ import lombok.Data;
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class UserExternalResponseDTO {
 
-    private String firstName;
     private String email;
+    private String firstName;
+    private String lastName;
+    private Double baseSalary;
 }

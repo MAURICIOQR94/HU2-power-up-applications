@@ -14,6 +14,7 @@ import static org.springframework.http.MediaType.APPLICATION_JSON;
 @Builder(toBuilder = true)
 public final class ResponseDTO<T> {
 
+    @JsonInclude(JsonInclude.Include.NON_NULL)
     private final String message;
 
     @JsonInclude(JsonInclude.Include.NON_NULL)
