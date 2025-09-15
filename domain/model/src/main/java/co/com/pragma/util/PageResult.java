@@ -1,4 +1,4 @@
-package co.com.pragma.model.pageresult;
+package co.com.pragma.util;
 
 import lombok.Builder;
 import lombok.Data;

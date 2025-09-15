@@ -5,10 +5,8 @@ import co.com.pragma.model.user.User;
 import org.mapstruct.Mapper;
 
 @Mapper(componentModel = "spring")
-
 public interface UserExternalMapper {
 
-    User toEntity(UserExternalResponseDTO userExternalResponseDTO);
-    UserExternalResponseDTO toData(User user);
+    User toModel(UserExternalResponseDTO userExternalResponseDTO);
 
 }

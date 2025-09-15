@@ -1,4 +1,4 @@
-package co.com.pragma.model.tokeninfo;
+package co.com.pragma.util;
 
 import lombok.Builder;
 import lombok.Data;
@@ -9,6 +9,5 @@ public class TokenInfo {
 
     private String email;
     private String userId;
-    private String documentNumber;
 
 }

@@ -1,6 +1,6 @@
 package co.com.pragma.domain.gateways.security;
 
-import co.com.pragma.model.tokeninfo.TokenInfo;
+import co.com.pragma.util.TokenInfo;
 import reactor.core.publisher.Mono;
 
 import java.util.UUID;

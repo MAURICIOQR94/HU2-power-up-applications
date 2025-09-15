@@ -10,7 +10,7 @@ import co.com.pragma.api.mapper.LoanApplicationDTOMapper;
 import co.com.pragma.api.util.ParamsUtil;
 import co.com.pragma.common.exception.GeneralException;
 import co.com.pragma.domain.gateways.security.JwtUtilService;
-import co.com.pragma.model.tokeninfo.TokenInfo;
+import co.com.pragma.util.TokenInfo;
 import co.com.pragma.usecase.getloanapplications.GetLoanApplicationsUseCase;
 import co.com.pragma.usecase.registerloanapplication.RegisterLoanApplicationUseCase;
 import co.com.pragma.usecase.updateloanapplicationstatus.UpdateLoanApplicationStatusUseCase;

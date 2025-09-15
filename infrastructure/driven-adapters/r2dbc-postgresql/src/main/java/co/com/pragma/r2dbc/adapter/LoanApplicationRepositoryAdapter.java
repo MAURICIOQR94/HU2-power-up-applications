@@ -46,6 +46,12 @@ public class LoanApplicationRepositoryAdapter extends ReactiveAdapterOperations<
     }
 
     @Override
+    public Flux<LoanApplication> findAllByDocumentNumberAndIdStatus(String documentNumber, Long idStatus) {
+        return repository.findAllByDocumentNumberAndIdStatus(documentNumber, idStatus)
+                .map(this::toEntity);
+    }
+
+    @Override
     public Flux<LoanApplication> findByIdStatusInPaged(List<Long> idStatuses, int page, int size) {
         if (idStatuses == null || idStatuses.isEmpty()) {
             return Flux.empty();

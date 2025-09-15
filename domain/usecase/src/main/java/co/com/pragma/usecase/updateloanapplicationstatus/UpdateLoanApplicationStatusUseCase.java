@@ -7,7 +7,7 @@ import co.com.pragma.model.applicationstatus.ApplicationStatus;
 import co.com.pragma.model.applicationstatus.gateways.ApplicationStatusRepository;
 import co.com.pragma.model.loanapplication.LoanApplication;
 import co.com.pragma.model.loanapplication.gateways.LoanApplicationRepository;
-import co.com.pragma.model.statusupdatemessage.StatusUpdateMessage;
+import co.com.pragma.util.NotificationMessage;
 import lombok.RequiredArgsConstructor;
 import reactor.core.publisher.Mono;
 
@@ -21,11 +21,11 @@ import static co.com.pragma.common.enums.BusinessExceptionMessage.*;
 @RequiredArgsConstructor
 public class UpdateLoanApplicationStatusUseCase {
 
-    private static final String PENDIENTE = "PENDIENTE";
-    private static final String REVISION_MANUAL = "REVISION_MANUAL";
-    private static final String APROBADO = "APROBADO";
-    private static final String RECHAZADO = "RECHAZADO";
-    private static final String CANCELADO = "CANCELADO";
+    private static final String PENDING = "PENDIENTE";
+    private static final String MANUAL_REVIEW = "REVISION_MANUAL";
+    private static final String APPROVED = "APROBADO";
+    private static final String REJECTED = "RECHAZADO";
+    private static final String CANCELED = "CANCELADO";
 
     private final LoanApplicationRepository loanApplicationRepository;
     private final ApplicationStatusRepository applicationStatusRepository;
@@ -64,7 +64,7 @@ public class UpdateLoanApplicationStatusUseCase {
 
         return loanApplicationRepository.update(loanApplication)
                 .flatMap(updatedLoanApplication -> {
-                    if (APROBADO.equals(newStatus) || RECHAZADO.equals(newStatus)) {
+                    if (APPROVED.equals(newStatus) || REJECTED.equals(newStatus)) {
                         return notifyStatusChange(updatedLoanApplication, newStatus);
                     }
                     return Mono.just(updatedLoanApplication);
@@ -72,9 +72,9 @@ public class UpdateLoanApplicationStatusUseCase {
     }
 
     private Mono<LoanApplication> notifyStatusChange(LoanApplication updatedApplication, String newStatus) {
-        return externalService.getUserByEmail(updatedApplication.getEmail())
+        return externalService.getUserByEmailAsClient(updatedApplication.getEmail())
                 .flatMap(user -> {
-                    StatusUpdateMessage message = StatusUpdateMessage.builder()
+                    NotificationMessage message = NotificationMessage.builder()
                             .email(user.getEmail())
                             .name(user.getFirstName())
                             .status(newStatus)
@@ -85,11 +85,11 @@ public class UpdateLoanApplicationStatusUseCase {
 
     private boolean isValidStatusTransition(String currentStatus, String newStatus) {
         Map<String, List<String>> allowedTransitions = Map.of(
-                PENDIENTE, Arrays.asList(APROBADO, RECHAZADO, CANCELADO),
-                REVISION_MANUAL, Arrays.asList(APROBADO, RECHAZADO, CANCELADO),
-                APROBADO, List.of(CANCELADO),
-                RECHAZADO, List.of(),
-                CANCELADO, List.of()
+                PENDING, Arrays.asList(APPROVED, REJECTED, CANCELED),
+                MANUAL_REVIEW, Arrays.asList(APPROVED, REJECTED, CANCELED),
+                APPROVED, List.of(CANCELED),
+                REJECTED, List.of(),
+                CANCELED, List.of()
         );
 
         return allowedTransitions.getOrDefault(currentStatus.toUpperCase(), List.of())

@@ -1,7 +1,7 @@
 package co.com.pragma.security.util;
 
 import co.com.pragma.domain.gateways.security.JwtUtilService;
-import co.com.pragma.model.tokeninfo.TokenInfo;
+import co.com.pragma.util.TokenInfo;
 import io.jsonwebtoken.*;
 import io.jsonwebtoken.security.Keys;
 import jakarta.annotation.PostConstruct;

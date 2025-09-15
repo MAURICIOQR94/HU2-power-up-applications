@@ -7,7 +7,7 @@ import co.com.pragma.model.loanapplication.LoanApplication;
 import co.com.pragma.model.loanapplication.gateways.LoanApplicationRepository;
 import co.com.pragma.model.loantype.LoanType;
 import co.com.pragma.model.loantype.gateways.LoanTypeRepository;
-import co.com.pragma.model.pageresult.PageResult;
+import co.com.pragma.util.PageResult;
 import co.com.pragma.model.user.User;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -50,7 +50,7 @@ class GetLoanApplicationsUseCaseTest {
     }
 
     @Test
-    void shouldReturnEmptyPageWhenNoStatusesFound() {
+    void returnEmptyPageWhenNoStatusesFound() {
         when(statusRepository.findByNameIn(any())).thenReturn(Flux.empty());
 
         Mono<PageResult<LoanApplication>> result =
@@ -68,7 +68,7 @@ class GetLoanApplicationsUseCaseTest {
     }
 
     @Test
-    void shouldReturnEnrichedLoanApplications() {
+    void returnEnrichedLoanApplications() {
         ApplicationStatus status = ApplicationStatus.builder().id(1L).name("APPROVED").build();
         LoanType type = LoanType.builder().id(1L).name("PERSONAL").interestRate(10.0f).build();
         User user = User.builder().email("test@mail.com").firstName("John").lastName("Smith").build();
@@ -87,7 +87,7 @@ class GetLoanApplicationsUseCaseTest {
         when(loanRepository.countByIdStatusIn(any())).thenReturn(Mono.just(1L));
         when(statusRepository.findById(1L)).thenReturn(Mono.just(status));
         when(typeRepository.findById(1L)).thenReturn(Mono.just(type));
-        when(externalService.getUserByEmail("test@mail.com")).thenReturn(Mono.just(user));
+        when(externalService.getUserByEmailAsClient("test@mail.com")).thenReturn(Mono.just(user));
 
         Mono<PageResult<LoanApplication>> result =
                 useCase.findByStatusPaged(List.of("APPROVED"), 0, 10);

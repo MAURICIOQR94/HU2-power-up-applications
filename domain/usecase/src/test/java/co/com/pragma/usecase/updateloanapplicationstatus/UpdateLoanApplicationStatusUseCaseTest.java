@@ -7,7 +7,7 @@ import co.com.pragma.model.applicationstatus.ApplicationStatus;
 import co.com.pragma.model.applicationstatus.gateways.ApplicationStatusRepository;
 import co.com.pragma.model.loanapplication.LoanApplication;
 import co.com.pragma.model.loanapplication.gateways.LoanApplicationRepository;
-import co.com.pragma.model.statusupdatemessage.StatusUpdateMessage;
+import co.com.pragma.util.NotificationMessage;
 import co.com.pragma.model.user.User;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -24,7 +24,6 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.*;
 
-import java.util.Map;
 import java.util.UUID;
 
 @ExtendWith(SpringExtension.class)
@@ -92,9 +91,9 @@ class UpdateLoanApplicationStatusUseCaseTest {
                 .thenReturn(Mono.just(approvedStatus));
         when(loanApplicationRepository.update(any(LoanApplication.class)))
                 .thenReturn(Mono.just(pendingLoanApplication.toBuilder().status(approvedStatus).build()));
-        when(externalService.getUserByEmail(anyString()))
+        when(externalService.getUserByEmailAsClient(anyString()))
                 .thenReturn(Mono.just(User.builder().email("test@example.com").firstName("John").lastName("Test").build()));
-        when(sqsSenderService.send(any(StatusUpdateMessage.class)))
+        when(sqsSenderService.send(any(NotificationMessage.class)))
                 .thenReturn(Mono.empty());
 
         Mono<LoanApplication> resultMono = useCase.execute(loanApplicationId, APROBADO);
@@ -109,8 +108,8 @@ class UpdateLoanApplicationStatusUseCaseTest {
         verify(applicationStatusRepository, times(1)).findById(pendingStatus.getId());
         verify(applicationStatusRepository, times(1)).findByName(APROBADO);
         verify(loanApplicationRepository, times(1)).update(any(LoanApplication.class));
-        verify(externalService, times(1)).getUserByEmail("test@example.com");
-        verify(sqsSenderService, times(1)).send(any(StatusUpdateMessage.class));
+        verify(externalService, times(1)).getUserByEmailAsClient("test@example.com");
+        verify(sqsSenderService, times(1)).send(any(NotificationMessage.class));
     }
 
     @Test

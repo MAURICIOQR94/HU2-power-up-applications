@@ -4,5 +4,6 @@ import co.com.pragma.model.user.User;
 import reactor.core.publisher.Mono;
 
 public interface ExternalService {
-    Mono<User> getUserByEmail(String email);
+    Mono<User> getUserByEmailAsClient(String email);
+    Mono<User> getUserByEmailAsService(String email);
 }

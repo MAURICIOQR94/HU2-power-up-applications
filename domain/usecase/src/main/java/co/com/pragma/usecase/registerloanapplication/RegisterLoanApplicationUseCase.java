@@ -1,16 +1,26 @@
 package co.com.pragma.usecase.registerloanapplication;
 
+import co.com.pragma.domain.gateways.restconsumer.ExternalService;
+import co.com.pragma.domain.gateways.sqs.SQSSenderService;
 import co.com.pragma.model.applicationstatus.ApplicationStatus;
 import co.com.pragma.model.applicationstatus.gateways.ApplicationStatusRepository;
 import co.com.pragma.common.exception.BusinessException;
+import co.com.pragma.model.lambdavalidation.PaymentPlan;
+import co.com.pragma.model.lambdavalidation.ValidationResult;
+import co.com.pragma.model.lambdavalidation.gateways.LambdaValidationService;
 import co.com.pragma.model.loanapplication.LoanApplication;
 import co.com.pragma.model.loanapplication.gateways.LoanApplicationRepository;
 import co.com.pragma.model.loantype.LoanType;
 import co.com.pragma.model.loantype.gateways.LoanTypeRepository;
+import co.com.pragma.model.user.User;
+import co.com.pragma.service.LoanCalculator;
+import co.com.pragma.model.lambdavalidation.CapacityCalculation;
+import co.com.pragma.util.NotificationMessage;
 import lombok.RequiredArgsConstructor;
 import reactor.core.publisher.Mono;
 
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.UUID;
 
 import static co.com.pragma.common.enums.BusinessExceptionMessage.APPLICATION_STATUS_NOT_FOUND;
@@ -20,34 +30,126 @@ import static co.com.pragma.common.enums.BusinessExceptionMessage.LOAN_TYPE_NOT_
 public class RegisterLoanApplicationUseCase {
 
     private static final String DEFAULT_STATUS_NAME = "PENDIENTE";
+    private static final String APPROVED = "APROBADO";
+    private static final String REJECTED = "RECHAZADO";
 
     private final LoanApplicationRepository loanApplicationRepository;
     private final LoanTypeRepository loanTypeRepository;
     private final ApplicationStatusRepository applicationStatusRepository;
+    private final LambdaValidationService lambdaValidationService;
+    private final SQSSenderService sqsSenderService;
+    private final ExternalService externalService;
 
     public Mono<LoanApplication> execute(LoanApplication loanApplication) {
+        return externalService.getUserByEmailAsService(loanApplication.getEmail())
+                .flatMap(user -> {
+                    loanApplication.setUser(user);
+                    loanApplication.setDocumentNumber(user.getDocumentNumber());
 
-        Mono<LoanType> loanTypeMono = loanTypeRepository.findByName(loanApplication.getLoanType().getName())
-                .switchIfEmpty(Mono.error(new BusinessException(LOAN_TYPE_NOT_FOUND)));
+                    return loanTypeRepository.findByName(loanApplication.getLoanType().getName())
+                            .switchIfEmpty(Mono.error(new BusinessException(LOAN_TYPE_NOT_FOUND)))
+                            .flatMap(foundLoanType -> {
+                                if (foundLoanType.isAutomaticValidation()) {
+                                    return handleAutomaticValidation(loanApplication, foundLoanType);
+                                } else {
+                                    return handleManualValidation(loanApplication, foundLoanType);
+                                }
+                            });
+                });
+    }
 
-        Mono<ApplicationStatus> statusMono = applicationStatusRepository.findByName(DEFAULT_STATUS_NAME)
-                .switchIfEmpty(Mono.error(new BusinessException(APPLICATION_STATUS_NOT_FOUND)));
+    private Mono<LoanApplication> handleAutomaticValidation(LoanApplication loanApplication, LoanType foundLoanType) {
+        User user = loanApplication.getUser();
+        return applicationStatusRepository.findByName(APPROVED)
+                .switchIfEmpty(Mono.error(new BusinessException(APPLICATION_STATUS_NOT_FOUND)))
+                .flatMap(approvedStatus ->
+                        loanApplicationRepository.findAllByDocumentNumberAndIdStatus(
+                                        loanApplication.getDocumentNumber(),
+                                        approvedStatus.getId()
+                                )
+                                .flatMap(app ->
+                                        loanTypeRepository.findById(app.getLoanType().getId())
+                                                .map(fullLoanType -> {
+                                                    app.setLoanType(fullLoanType);
+                                                    return app;
+                                                })
+                                )
+                                .collectList()
+                                .flatMap(approvedApplications -> {
+                                    double totalMonthlyPayment = approvedApplications.stream()
+                                            .mapToDouble(app -> LoanCalculator.calculateMonthlyPayment(
+                                                    app.getAmount(),
+                                                    app.getLoanType().getInterestRate(),
+                                                    app.getTerm()
+                                            ))
+                                            .sum();
 
-        return Mono.zip(loanTypeMono, statusMono)
-                .flatMap(tuple -> {
+                                    CapacityCalculation request = CapacityCalculation.builder()
+                                            .baseSalary(user.getBaseSalary())
+                                            .amount(loanApplication.getAmount())
+                                            .term(loanApplication.getTerm())
+                                            .interestRate(foundLoanType.getInterestRate())
+                                            .totalMonthlyPayment(totalMonthlyPayment)
+                                            .build();
 
-                    LoanType foundLoanType = tuple.getT1();
-                    ApplicationStatus foundStatus = tuple.getT2();
+                                    return lambdaValidationService.validateLoanApplication(request)
+                                            .flatMap(validationResult ->
+                                                    processValidationResult(validationResult, loanApplication, foundLoanType)
+                                            );
+                                })
+                );
+    }
 
-                    LoanApplication newLoanApplication = loanApplication.toBuilder()
-                            .id(UUID.randomUUID())
-                            .createdAt(LocalDateTime.now())
-                            .loanType(foundLoanType)
-                            .status(foundStatus)
-                            .build();
+    private Mono<LoanApplication> processValidationResult(ValidationResult validationResult,
+                                                          LoanApplication loanApplication,
+                                                          LoanType foundLoanType) {
+        return applicationStatusRepository.findByName(validationResult.getFinalStatus())
+                .switchIfEmpty(Mono.error(new BusinessException(APPLICATION_STATUS_NOT_FOUND)))
+                .flatMap(finalStatus -> {
+                    LoanApplication newLoanApplication =
+                            buildLoanApplication(loanApplication, foundLoanType, finalStatus);
 
+                    Mono<LoanApplication> notifyMono =
+                            (APPROVED.equalsIgnoreCase(finalStatus.getName())
+                                    || REJECTED.equalsIgnoreCase(finalStatus.getName()))
+                                    ? notifyStatus(newLoanApplication, finalStatus.getName(), validationResult.getPaymentPlan())
+                                    : Mono.just(newLoanApplication);
+
+                    return notifyMono.flatMap(loanApplicationRepository::save);
+                });
+    }
+
+    private Mono<LoanApplication> handleManualValidation(LoanApplication loanApplication, LoanType foundLoanType) {
+        return applicationStatusRepository.findByName(DEFAULT_STATUS_NAME)
+                .switchIfEmpty(Mono.error(new BusinessException(APPLICATION_STATUS_NOT_FOUND)))
+                .flatMap(defaultStatus -> {
+                    LoanApplication newLoanApplication = buildLoanApplication(loanApplication, foundLoanType, defaultStatus);
                     return loanApplicationRepository.save(newLoanApplication);
                 });
+    }
+
+    private LoanApplication buildLoanApplication(LoanApplication loanApplication,
+                                                 LoanType foundLoanType,
+                                                 ApplicationStatus finalStatus) {
+        return loanApplication.toBuilder()
+                .id(UUID.randomUUID())
+                .createdAt(LocalDateTime.now())
+                .loanType(foundLoanType)
+                .status(finalStatus)
+                .build();
+    }
+
+    private Mono<LoanApplication> notifyStatus(LoanApplication updatedApplication, String newStatus, List<PaymentPlan> paymentPlan) {
+        User user = updatedApplication.getUser();
+
+        NotificationMessage message = NotificationMessage.builder()
+                .email(user.getEmail())
+                .name(user.getFirstName())
+                .status(newStatus)
+                .paymentPlan(paymentPlan)
+                .build();
+
+        return sqsSenderService.send(message).thenReturn(updatedApplication);
     }
 
 }

@@ -7,7 +7,7 @@ import co.com.pragma.model.loanapplication.LoanApplication;
 import co.com.pragma.model.loanapplication.gateways.LoanApplicationRepository;
 import co.com.pragma.model.loantype.LoanType;
 import co.com.pragma.model.loantype.gateways.LoanTypeRepository;
-import co.com.pragma.model.pageresult.PageResult;
+import co.com.pragma.util.PageResult;
 import co.com.pragma.model.user.User;
 import co.com.pragma.service.LoanCalculator;
 import lombok.RequiredArgsConstructor;
@@ -60,7 +60,7 @@ public class GetLoanApplicationsUseCase {
     private Mono<LoanApplication> enrichApplication(LoanApplication loanApplication) {
         Mono<ApplicationStatus> statusMono = statusRepository.findById(loanApplication.getStatus().getId());
         Mono<LoanType> typeMono = typeRepository.findById(loanApplication.getLoanType().getId());
-        Mono<User> userMono = externalService.getUserByEmail(loanApplication.getEmail());
+        Mono<User> userMono = externalService.getUserByEmailAsClient(loanApplication.getEmail());
 
         return Mono.zip(statusMono, typeMono, userMono)
                 .map(tuple -> {
