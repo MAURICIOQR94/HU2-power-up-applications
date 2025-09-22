@@ -51,10 +51,12 @@ logging:
 adapter:
   sqs:
     region: ${AWS_REGION}
-    queueUrl: ${AWS_QUEUE_URL}
+    queues:
+      notifications: ${AWS_QUEUE_NOTIFICATIONS_URL}
+      reports: ${AWS_QUEUE_REPORTS_URL}
 
   authentication:
     base-url: "http://localhost:8080/api/v1"
 
   lambda-validation:
-    base-url: ${CAPACITY_URL_LAMBDA}
+    base-url: ${CAPACITY_LAMBDA_URL}

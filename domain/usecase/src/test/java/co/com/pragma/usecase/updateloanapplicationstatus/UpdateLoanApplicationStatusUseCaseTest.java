@@ -2,7 +2,7 @@ package co.com.pragma.usecase.updateloanapplicationstatus;
 
 import co.com.pragma.common.exception.BusinessException;
 import co.com.pragma.domain.gateways.restconsumer.ExternalService;
-import co.com.pragma.domain.gateways.sqs.SQSSenderService;
+import co.com.pragma.domain.gateways.sqs.QueueSenderService;
 import co.com.pragma.model.applicationstatus.ApplicationStatus;
 import co.com.pragma.model.applicationstatus.gateways.ApplicationStatusRepository;
 import co.com.pragma.model.loanapplication.LoanApplication;
@@ -43,7 +43,7 @@ class UpdateLoanApplicationStatusUseCaseTest {
     private ExternalService externalService;
 
     @Mock
-    private SQSSenderService sqsSenderService;
+    private QueueSenderService queueSenderService;
 
     @InjectMocks
     private UpdateLoanApplicationStatusUseCase useCase;
@@ -93,7 +93,7 @@ class UpdateLoanApplicationStatusUseCaseTest {
                 .thenReturn(Mono.just(pendingLoanApplication.toBuilder().status(approvedStatus).build()));
         when(externalService.getUserByEmailAsClient(anyString()))
                 .thenReturn(Mono.just(User.builder().email("test@example.com").firstName("John").lastName("Test").build()));
-        when(sqsSenderService.send(any(NotificationMessage.class)))
+        when(queueSenderService.send(any(NotificationMessage.class)))
                 .thenReturn(Mono.empty());
 
         Mono<LoanApplication> resultMono = useCase.execute(loanApplicationId, APROBADO);
@@ -109,7 +109,7 @@ class UpdateLoanApplicationStatusUseCaseTest {
         verify(applicationStatusRepository, times(1)).findByName(APROBADO);
         verify(loanApplicationRepository, times(1)).update(any(LoanApplication.class));
         verify(externalService, times(1)).getUserByEmailAsClient("test@example.com");
-        verify(sqsSenderService, times(1)).send(any(NotificationMessage.class));
+        verify(queueSenderService, times(1)).send(any(NotificationMessage.class));
     }
 
     @Test

@@ -2,7 +2,8 @@ package co.com.pragma.usecase.updateloanapplicationstatus;
 
 import co.com.pragma.common.exception.BusinessException;
 import co.com.pragma.domain.gateways.restconsumer.ExternalService;
-import co.com.pragma.domain.gateways.sqs.SQSSenderService;
+import co.com.pragma.domain.gateways.sqs.QueueSenderService;
+import co.com.pragma.domain.gateways.sqs.QueueType;
 import co.com.pragma.model.applicationstatus.ApplicationStatus;
 import co.com.pragma.model.applicationstatus.gateways.ApplicationStatusRepository;
 import co.com.pragma.model.loanapplication.LoanApplication;
@@ -30,7 +31,7 @@ public class UpdateLoanApplicationStatusUseCase {
     private final LoanApplicationRepository loanApplicationRepository;
     private final ApplicationStatusRepository applicationStatusRepository;
     private final ExternalService externalService;
-    private final SQSSenderService sqsSenderService;
+    private final QueueSenderService queueSenderService;
 
     public Mono<LoanApplication> execute(UUID id, String newStatus) {
         return loanApplicationRepository.findById(id)
@@ -79,7 +80,7 @@ public class UpdateLoanApplicationStatusUseCase {
                             .name(user.getFirstName())
                             .status(newStatus)
                             .build();
-                    return sqsSenderService.send(message).thenReturn(updatedApplication);
+                    return queueSenderService.send(QueueType.NOTIFICATIONS, message).thenReturn(updatedApplication);
                 });
     }
 

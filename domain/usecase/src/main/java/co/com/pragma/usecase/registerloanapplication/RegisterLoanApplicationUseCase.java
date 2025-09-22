@@ -1,11 +1,11 @@
 package co.com.pragma.usecase.registerloanapplication;
 
 import co.com.pragma.domain.gateways.restconsumer.ExternalService;
-import co.com.pragma.domain.gateways.sqs.SQSSenderService;
+import co.com.pragma.domain.gateways.sqs.QueueSenderService;
+import co.com.pragma.domain.gateways.sqs.QueueType;
 import co.com.pragma.model.applicationstatus.ApplicationStatus;
 import co.com.pragma.model.applicationstatus.gateways.ApplicationStatusRepository;
 import co.com.pragma.common.exception.BusinessException;
-import co.com.pragma.model.lambdavalidation.PaymentPlan;
 import co.com.pragma.model.lambdavalidation.ValidationResult;
 import co.com.pragma.model.lambdavalidation.gateways.LambdaValidationService;
 import co.com.pragma.model.loanapplication.LoanApplication;
@@ -15,12 +15,12 @@ import co.com.pragma.model.loantype.gateways.LoanTypeRepository;
 import co.com.pragma.model.user.User;
 import co.com.pragma.service.LoanCalculator;
 import co.com.pragma.model.lambdavalidation.CapacityCalculation;
+import co.com.pragma.util.LoanReportMessage;
 import co.com.pragma.util.NotificationMessage;
 import lombok.RequiredArgsConstructor;
 import reactor.core.publisher.Mono;
 
 import java.time.LocalDateTime;
-import java.util.List;
 import java.util.UUID;
 
 import static co.com.pragma.common.enums.BusinessExceptionMessage.APPLICATION_STATUS_NOT_FOUND;
@@ -37,7 +37,7 @@ public class RegisterLoanApplicationUseCase {
     private final LoanTypeRepository loanTypeRepository;
     private final ApplicationStatusRepository applicationStatusRepository;
     private final LambdaValidationService lambdaValidationService;
-    private final SQSSenderService sqsSenderService;
+    private final QueueSenderService queueSenderService;
     private final ExternalService externalService;
 
     public Mono<LoanApplication> execute(LoanApplication loanApplication) {
@@ -94,10 +94,22 @@ public class RegisterLoanApplicationUseCase {
 
                                     return lambdaValidationService.validateLoanApplication(request)
                                             .flatMap(validationResult ->
-                                                    processValidationResult(validationResult, loanApplication, foundLoanType)
+                                                    processValidationResult(
+                                                            validationResult,
+                                                            loanApplication,
+                                                            foundLoanType)
                                             );
                                 })
                 );
+    }
+
+    private Mono<LoanApplication> handleManualValidation(LoanApplication loanApplication, LoanType foundLoanType) {
+        return applicationStatusRepository.findByName(DEFAULT_STATUS_NAME)
+                .switchIfEmpty(Mono.error(new BusinessException(APPLICATION_STATUS_NOT_FOUND)))
+                .flatMap(defaultStatus -> {
+                    LoanApplication newLoanApplication = buildLoanApplication(loanApplication, foundLoanType, defaultStatus);
+                    return loanApplicationRepository.save(newLoanApplication);
+                });
     }
 
     private Mono<LoanApplication> processValidationResult(ValidationResult validationResult,
@@ -112,19 +124,10 @@ public class RegisterLoanApplicationUseCase {
                     Mono<LoanApplication> notifyMono =
                             (APPROVED.equalsIgnoreCase(finalStatus.getName())
                                     || REJECTED.equalsIgnoreCase(finalStatus.getName()))
-                                    ? notifyStatus(newLoanApplication, finalStatus.getName(), validationResult.getPaymentPlan())
+                                    ? notifyStatus(newLoanApplication, finalStatus.getName(), validationResult)
                                     : Mono.just(newLoanApplication);
 
                     return notifyMono.flatMap(loanApplicationRepository::save);
-                });
-    }
-
-    private Mono<LoanApplication> handleManualValidation(LoanApplication loanApplication, LoanType foundLoanType) {
-        return applicationStatusRepository.findByName(DEFAULT_STATUS_NAME)
-                .switchIfEmpty(Mono.error(new BusinessException(APPLICATION_STATUS_NOT_FOUND)))
-                .flatMap(defaultStatus -> {
-                    LoanApplication newLoanApplication = buildLoanApplication(loanApplication, foundLoanType, defaultStatus);
-                    return loanApplicationRepository.save(newLoanApplication);
                 });
     }
 
@@ -139,17 +142,32 @@ public class RegisterLoanApplicationUseCase {
                 .build();
     }
 
-    private Mono<LoanApplication> notifyStatus(LoanApplication updatedApplication, String newStatus, List<PaymentPlan> paymentPlan) {
+    private Mono<LoanApplication> notifyStatus(LoanApplication updatedApplication,
+                                               String newStatus,
+                                               ValidationResult validationResult) {
         User user = updatedApplication.getUser();
 
-        NotificationMessage message = NotificationMessage.builder()
+        NotificationMessage notificationMessage = NotificationMessage.builder()
                 .email(user.getEmail())
                 .name(user.getFirstName())
                 .status(newStatus)
-                .paymentPlan(paymentPlan)
+                .paymentPlan(validationResult.getPaymentPlan())
                 .build();
 
-        return sqsSenderService.send(message).thenReturn(updatedApplication);
+        Mono<String> notificationSent = queueSenderService.send(QueueType.NOTIFICATIONS, notificationMessage);
+
+        if (APPROVED.equalsIgnoreCase(newStatus)) {
+            LoanReportMessage reportMessage = LoanReportMessage.builder()
+                    .status(APPROVED)
+                    .amount(updatedApplication.getAmount())
+                    .build();
+
+            Mono<String> reportSent = queueSenderService.send(QueueType.REPORTS, reportMessage);
+
+            return Mono.zip(notificationSent, reportSent).thenReturn(updatedApplication);
+        }
+
+        return notificationSent.thenReturn(updatedApplication);
     }
 
 }

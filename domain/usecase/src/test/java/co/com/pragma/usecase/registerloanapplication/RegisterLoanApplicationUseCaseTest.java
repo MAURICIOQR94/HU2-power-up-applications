@@ -2,7 +2,7 @@ package co.com.pragma.usecase.registerloanapplication;
 
 import co.com.pragma.common.exception.BusinessException;
 import co.com.pragma.domain.gateways.restconsumer.ExternalService;
-import co.com.pragma.domain.gateways.sqs.SQSSenderService;
+import co.com.pragma.domain.gateways.sqs.QueueSenderService;
 import co.com.pragma.model.applicationstatus.gateways.ApplicationStatusRepository;
 import co.com.pragma.model.lambdavalidation.ValidationResult;
 import co.com.pragma.model.lambdavalidation.gateways.LambdaValidationService;
@@ -55,7 +55,7 @@ class RegisterLoanApplicationUseCaseTest {
     private LambdaValidationService lambdaValidationService;
 
     @Mock
-    private SQSSenderService sqsSenderService;
+    private QueueSenderService queueSenderService;
 
     @InjectMocks
     private RegisterLoanApplicationUseCase useCase;
@@ -128,7 +128,7 @@ class RegisterLoanApplicationUseCaseTest {
         when(loanApplicationRepository.findAllByDocumentNumberAndIdStatus(anyString(), anyLong()))
                 .thenReturn(Flux.empty());
         when(lambdaValidationService.validateLoanApplication(any())).thenReturn(Mono.just(validationResult));
-        when(sqsSenderService.send(any())).thenReturn(Mono.empty());
+        when(queueSenderService.send(any(),any())).thenReturn(Mono.empty());
         when(loanApplicationRepository.save(any())).thenAnswer(invocation ->
                 Mono.just(invocation.getArgument(0)));
 
@@ -140,7 +140,7 @@ class RegisterLoanApplicationUseCaseTest {
                 })
                 .verifyComplete();
 
-        verify(sqsSenderService, times(1)).send(any());
+        verify(queueSenderService, times(1)).send(any(),any());
         verify(loanApplicationRepository, times(1)).save(any());
     }
 
