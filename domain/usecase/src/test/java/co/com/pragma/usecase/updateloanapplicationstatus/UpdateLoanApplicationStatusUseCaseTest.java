@@ -93,7 +93,7 @@ class UpdateLoanApplicationStatusUseCaseTest {
                 .thenReturn(Mono.just(pendingLoanApplication.toBuilder().status(approvedStatus).build()));
         when(externalService.getUserByEmailAsClient(anyString()))
                 .thenReturn(Mono.just(User.builder().email("test@example.com").firstName("John").lastName("Test").build()));
-        when(queueSenderService.send(any(NotificationMessage.class)))
+        when(queueSenderService.send(any(),any()))
                 .thenReturn(Mono.empty());
 
         Mono<LoanApplication> resultMono = useCase.execute(loanApplicationId, APROBADO);
@@ -109,7 +109,7 @@ class UpdateLoanApplicationStatusUseCaseTest {
         verify(applicationStatusRepository, times(1)).findByName(APROBADO);
         verify(loanApplicationRepository, times(1)).update(any(LoanApplication.class));
         verify(externalService, times(1)).getUserByEmailAsClient("test@example.com");
-        verify(queueSenderService, times(1)).send(any(NotificationMessage.class));
+        verify(queueSenderService, times(1)).send(any(),any());
     }
 
     @Test

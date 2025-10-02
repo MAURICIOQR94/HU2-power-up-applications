@@ -140,7 +140,7 @@ class RegisterLoanApplicationUseCaseTest {
                 })
                 .verifyComplete();
 
-        verify(queueSenderService, times(1)).send(any(),any());
+        verify(queueSenderService, times(2)).send(any(),any());
         verify(loanApplicationRepository, times(1)).save(any());
     }
 
